@@ -1,0 +1,6 @@
+ProductID,Name,Price,Category,PriceRange
+1,Phone,1000.0,Electronics,High
+2,Book,15.5,Books,Medium
+3,Laptop,800.0,Electronics,High
+4,Pen,5.0,Office,Low
+5,Camera,600.0,Electronics,High
