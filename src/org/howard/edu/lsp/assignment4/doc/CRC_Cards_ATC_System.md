@@ -145,8 +145,3 @@ Assumptions (if any):
 - The console is operated by a single human air traffic controller
 - Queries are entered manually via keyboard input
 
----
-
-## AI / Internet Usage Note
-
-This assignment was completed with the assistance of Claude (claude-sonnet-4-6) via Claude Code CLI. The AI was used to generate the full set of CRC cards based on the provided problem description and assignment requirements.
