@@ -9,14 +9,14 @@
 `requests` - The ArrayList that stores all submitted requests.
 
 **Concurrency Problem:**
-There's a race condition on `nextId`. Picture this: when two threads try to call `getNextId()` at the same time, they can both read the value 1 before either one increments it. So Thread A reads 1, Thread B reads 1, then they both increment and return 1 - boom, duplicate ID!
+There's a race condition on `nextId`. When two threads try to call `getNextId()` at the same time, they can both read the value 1 before either one increments it. So Thread A reads 1, Thread B reads 1, then they both increment and return 1 - resulting in duplicate IDs.
 
-Also, the `requests` ArrayList isn't thread-safe. If multiple threads try to add requests at the same time, it can mess up the ArrayList's internal data.
+Also, the `requests` ArrayList isn't thread-safe. If multiple threads try to add requests simultaneously, it can corrupt the ArrayList's internal data structure.
 
 **Why addRequest() is unsafe:**
-1. It calls `getNextId()`, which isn't protected - so we can get duplicate IDs
-2. Getting an ID and adding to the list aren't atomic - a thread could jump in between and mess things up
-3. ArrayList itself isn't thread-safe, so if multiple threads call `add()` at the same time, things break
+1. It calls `getNextId()`, which isn't protected - duplicate IDs are possible
+2. The ID generation and list addition aren't atomic - a thread could interrupt between them
+3. ArrayList itself isn't thread-safe, so concurrent `add()` calls can corrupt the structure
 4. Even if we synchronized just `addRequest()`, someone could call `getNextId()` directly from outside and still get duplicates
 
 ---
@@ -50,7 +50,7 @@ This only protects reading the list, not adding to it. It doesn't do anything ab
 **No, it should not be public.**
 
 **Explanation:**
-No, `getNextId()` shouldn't be public. Riel's heuristics say we should hide how things work internally. ID generation is just an implementation detail - clients shouldn't care about it. If people can call `getNextId()` directly, they might use those IDs for other things, and the system gets messy and inconsistent. By keeping it private, we make sure IDs are only generated and used the way we want them to be through `addRequest()`.
+`getNextId()` shouldn't be public according to Riel's heuristics on encapsulation. ID generation is just an implementation detail - clients shouldn't need to care about it. If people can call `getNextId()` directly, they might use those IDs for other purposes, making the system inconsistent. By keeping it private, we ensure IDs are only generated through `addRequest()`, maintaining the integrity of the system.
 
 ---
 
@@ -88,6 +88,6 @@ public class RequestManager {
 ```
 
 With this approach:
-- `AtomicInteger.getAndIncrement()` handles ID generation safely without needing `synchronized`
-- We still use `synchronized` on `addRequest()` to make sure ID assignment and list addition happen together
-- We return a copy of the list instead of the actual list, so people can't mess with it from outside
+- `AtomicInteger.getAndIncrement()` provides thread-safe ID generation without needing `synchronized`
+- `synchronized` on `addRequest()` ensures ID assignment and list addition happen together
+- Returning a copy of the list prevents external code from modifying the internal data
