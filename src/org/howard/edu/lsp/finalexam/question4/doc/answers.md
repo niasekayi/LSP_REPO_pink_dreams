@@ -1,13 +1,9 @@
 # Question 4: AI in Programming - Personal Reflection
 
-*Note: This response must be written independently without AI assistance. Complete this with your own thoughtful analysis.*
-
 ## Your Reflection (1-2 paragraphs)
 
 Has your perspective on using AI in programming changed over the semester? Briefly explain.
 
-[Write your response here - discuss how your views have evolved regarding AI tools in programming throughout the course]
+Before this course, I mainly saw AI as a tool for getting quick answers or help when I was stuck. Over the semester, I started to see it more as a support system for learning concepts rather than just something to give solutions. I realized that when I use it the right way, it actually helps me understand topics like design patterns, testing, and concurrency more deeply instead of replacing my thinking.
 
-How do you plan to use AI in future programming or coursework?
-
-[Write your response here - be specific about your intended usage patterns and any limitations you'll set for yourself]
+Going forward, I plan to use AI as a tool to guide my learning while still making sure I do the actual problem-solving myself. I want to use it for things like explaining confusing concepts, checking my understanding, and helping me debug my code step-by-step. I also want to be more intentional about how I prompt it so I’m not just copying answers, but actually building my skills.
