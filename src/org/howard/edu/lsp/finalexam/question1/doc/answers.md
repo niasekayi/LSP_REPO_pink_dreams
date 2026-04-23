@@ -9,19 +9,15 @@
 `requests` - The ArrayList that stores all submitted requests.
 
 **Concurrency Problem:**
-A race condition occurs on `nextId`. When multiple threads call `getNextId()` concurrently, the following sequence can happen:
-1. Thread A reads `nextId` (value = 1)
-2. Thread B reads `nextId` (value = 1) - before Thread A increments it
-3. Thread A increments `nextId` to 2 and returns 1
-4. Thread B increments `nextId` to 2 and returns 1 - **duplicate ID!**
+There's a race condition on `nextId`. Picture this: when two threads try to call `getNextId()` at the same time, they can both read the value 1 before either one increments it. So Thread A reads 1, Thread B reads 1, then they both increment and return 1 - boom, duplicate ID!
 
-Additionally, `requests` is not thread-safe. Multiple threads calling `addRequest()` simultaneously can corrupt the ArrayList's internal state.
+Also, the `requests` ArrayList isn't thread-safe. If multiple threads try to add requests at the same time, it can mess up the ArrayList's internal data.
 
 **Why addRequest() is unsafe:**
-1. It calls `getNextId()`, which has the race condition described above (duplicate IDs possible)
-2. The operation is not atomic: between getting an ID and adding the request to the list, another thread could interrupt
-3. ArrayList is not thread-safe; concurrent calls to `add()` can corrupt the internal list structure
-4. Even if `addRequest()` were synchronized, calls to `getNextId()` from outside `addRequest()` would still create duplicates
+1. It calls `getNextId()`, which isn't protected - so we can get duplicate IDs
+2. Getting an ID and adding to the list aren't atomic - a thread could jump in between and mess things up
+3. ArrayList itself isn't thread-safe, so if multiple threads call `add()` at the same time, things break
+4. Even if we synchronized just `addRequest()`, someone could call `getNextId()` directly from outside and still get duplicates
 
 ---
 
@@ -31,33 +27,19 @@ Additionally, `requests` is not thread-safe. Multiple threads calling `addReques
 
 **CORRECT**
 
-This fix works because:
-- The `synchronized` keyword ensures mutual exclusion on `getNextId()`
-- Only one thread can execute this method at a time
-- Each thread atomically reads `nextId`, increments it, and returns the value
-- No two threads can read the same `nextId` value
-- This eliminates the race condition on ID generation
-- Every request receives a unique ID
+This fix works. By synchronizing `getNextId()`, only one thread can run this method at a time. So Thread A gets in, reads 1, increments it to 2, and exits before Thread B can even look at `nextId`. This means every thread gets a unique ID - no more duplicates.
 
 **Fix B: `public synchronized void addRequest(String studentName) { ... }`**
 
 **INCORRECT**
 
-This fix does NOT solve the concurrency problem because:
-- While it protects the `requests.add()` call, it does NOT protect `getNextId()`
-- Threads can still call `getNextId()` from outside `addRequest()` and get duplicate IDs
-- Even if `addRequest()` is the only caller, two threads can enter `addRequest()` sequentially. The first gets synchronized access, calls `getNextId()` (not protected), then exits. The second then calls `getNextId()` - both can receive the same ID if they interleave at the wrong moment
-- The fundamental problem (race condition on `nextId`) remains unsolved
+This doesn't work because it doesn't protect `getNextId()` at all. Even though `addRequest()` is synchronized, the call to `getNextId()` inside it still isn't protected. Plus, nothing stops someone from calling `getNextId()` directly from outside, which would still give duplicate IDs. The real problem (the race condition on `nextId`) never gets fixed.
 
 **Fix C: `public synchronized List<String> getRequests() { ... }`**
 
 **INCORRECT**
 
-This fix does NOT solve the concurrency problem because:
-- It only protects reading the requests list, not writing to it
-- It does nothing to prevent duplicate IDs from `getNextId()`
-- Concurrent calls to `addRequest()` can still corrupt the ArrayList
-- The race condition on `nextId` is completely unaddressed
+This only protects reading the list, not adding to it. It doesn't do anything about the duplicate ID problem with `getNextId()`, and multiple threads still can't safely call `addRequest()`. This leaves the main issues completely unsolved.
 
 ---
 
@@ -68,13 +50,7 @@ This fix does NOT solve the concurrency problem because:
 **No, it should not be public.**
 
 **Explanation:**
-According to Arthur Riel's object-oriented heuristics on encapsulation and responsibility, `getNextId()` should not be part of the public interface. Here's why:
-- ID generation is an **implementation detail** of the request management system, not a concern of external clients
-- Exposing `getNextId()` violates **encapsulation** - it exposes internal state management
-- External code should not directly obtain IDs; ID assignment should be managed internally through `addRequest()`
-- This heuristic recommends hiding implementation details and providing only high-level, meaningful operations
-- If clients can call `getNextId()` directly, they might use IDs for purposes other than requests, leading to inconsistency
-- Making it private or package-private enforces that IDs are only generated within the controlled context of `addRequest()`
+No, `getNextId()` shouldn't be public. Riel's heuristics say we should hide how things work internally. ID generation is just an implementation detail - clients shouldn't care about it. If people can call `getNextId()` directly, they might use those IDs for other things, and the system gets messy and inconsistent. By keeping it private, we make sure IDs are only generated and used the way we want them to be through `addRequest()`.
 
 ---
 
@@ -82,11 +58,7 @@ According to Arthur Riel's object-oriented heuristics on encapsulation and respo
 
 **Description:**
 
-The alternative approach discussed in lecture is using **java.util.concurrent.atomic classes** (specifically `AtomicInteger`) instead of the `synchronized` keyword. This provides thread-safe operations without explicit synchronization.
-
-Another approach is using a **single-threaded ExecutorService** to serialize all request submissions, ensuring that all `addRequest()` operations execute sequentially without explicit synchronization.
-
-The `AtomicInteger` approach is simpler and more direct: it provides atomic operations like `getAndIncrement()` that are implemented using low-level compare-and-swap operations, guaranteeing thread safety without locking.
+Instead of using `synchronized`, we learned in lecture that we can use **AtomicInteger** from `java.util.concurrent.atomic`. It gives us thread-safe operations without having to manually lock threads. The `getAndIncrement()` method is atomic, so it handles the read-increment-return all in one go that can't be interrupted. This is simpler than writing `synchronized` everywhere.
 
 **Code Snippet:**
 
@@ -115,7 +87,7 @@ public class RequestManager {
 }
 ```
 
-This approach:
-- Uses `AtomicInteger.getAndIncrement()` for thread-safe ID generation without explicit `synchronized`
-- Still protects the compound operation of ID assignment + list addition with `synchronized` on `addRequest()`
-- Returns a copy of the requests list to prevent external modification
+With this approach:
+- `AtomicInteger.getAndIncrement()` handles ID generation safely without needing `synchronized`
+- We still use `synchronized` on `addRequest()` to make sure ID assignment and list addition happen together
+- We return a copy of the list instead of the actual list, so people can't mess with it from outside

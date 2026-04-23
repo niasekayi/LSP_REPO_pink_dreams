@@ -2,19 +2,21 @@
 
 ## Design Explanation
 
-The Template Method pattern is implemented in the `Report` abstract class, which defines the fixed workflow in the `generateReport()` method (lines 16-20). This template method orchestrates the sequence: `loadData()` → `formatHeader()` → `formatBody()` → `formatFooter()`. 
+I implemented the Template Method pattern by creating an abstract `Report` class with a `generateReport()` method that's marked `final`. This method does the same thing every time: calls `loadData()`, then `formatHeader()`, then `formatBody()`, then `formatFooter()`, and puts them all together.
 
-The template method is declared `final` to prevent subclasses from overriding it, ensuring the workflow order is preserved. Each step is delegated to abstract methods that subclasses like `StudentReport` and `CourseReport` implement with their specific logic (lines 7-16 in StudentReport.java and CourseReport.java). The polymorphic driver (ReportDriver.java, lines 17-23) stores different report types in a single `List<Report>` and iterates through them, demonstrating how the template method enables consistent processing of diverse report types without the driver knowing their concrete implementations.
+The cool part is that `StudentReport` and `CourseReport` are subclasses that inherit this method, so they automatically follow the same workflow. They each override the formatting methods to do their own thing - like StudentReport formats student info, CourseReport formats course info.
+
+In the driver, I create a list that holds both types of reports and loop through them. They all call the same `generateReport()` method, but each one produces different output based on their own overridden methods. This is polymorphism - the driver doesn't even need to know what type of report it's dealing with.
 
 ## How the Output Works
 
-When `report.generateReport()` is called on any Report object (student or course), the same template sequence executes:
-1. Each report's specific `loadData()` prepares its data
-2. Each report's `formatHeader()` returns its type-specific header
-3. Each report's `formatBody()` formats its unique content
-4. Each report's `formatFooter()` generates its closing
+When you call `report.generateReport()`, it follows the same steps every time:
+1. Load the data (student name + GPA for StudentReport, course name + enrollment for CourseReport)
+2. Format the header (says "Student Report" or "Course Report")
+3. Format the body (shows the actual data)
+4. Format the footer (wraps it up)
 
-The template method combines these formatted sections into the final report string, producing the expected output without requiring separate logic in the driver.
+Then it combines all those pieces into one string. The template method controls the order, but each report type fills in the pieces differently. That's why we can put them all in one list and treat them the same way.
 
 ---
 
